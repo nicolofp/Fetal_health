@@ -1,0 +1,66 @@
+---
+title: "Fetal Health Prediction"
+output: 
+  github_document:
+    df_print: kable
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(scipen = 5)
+source("functions_lib.R")
+```
+
+## Data
+
+This dataset contains **2126** records of features extracted from *Cardiotocogram exams*, which were then classified by three expert obstetritians into 3 classes:
+
++ **Normal**: `fetal_health = 1`
++ **Suspect**: `fetal_health = 2`
++ **Pathological**: `fetal_health = 3`
+
+From the plot we can see how the classes are unbalanced, in order to solve this problem we collapse the classes `2` and `3` in a new class called `SP` (Suspect/Pathological): 
+
+```{r plot_classes, fig.align='center', fig.height=5, fig.width=10}
+do.call("grid.arrange", c(list(C3,C2), ncol=2))
+```
+
+The variables that we use for the model are the following:
+
+* **baseline value:** Baseline Fetal Heart Rate (FHR) (beats per minute)   
+* **accelerations:** Number of accelerations per second
+* **fetal_movement:** Number of fetal movements per second    
+* **uterine_contractions:** Number of uterine contractions per second
+* **light_decelerations:** Number of light decelerations (LDs) per second
+* **severe_decelerations:** Number of severe decelerations (SDs) per second
+* **prolongued_decelerations:** Number of prolonged decelerations (PDs) per second
+* **abnormal_short_term_variability:** Percentage of time with abnormal short term variability
+* **mean_value_of_short_term_variability:** Mean value of short term variability
+* **percentage_of_time_with_abnormal_long_term_variability:** Percentage of time with abnormal long term variability
+* **mean_value_of_long_term_variability:** Mean value of long term variability
+* **histogram_width:** Width of histogram made using all values from a record 
+* **histogram_min:** Histogram minimum value 
+* **histogram_max:** Histogram maximum value 
+* **histogram_number_of_peaks:** Number of peaks in the exam histogram 
+* **histogram_number_of_zeroes:** Number of zeros in the exam histogram 
+* **histogram_mode:** Histogram mode
+* **histogram_mean:** Histogram mean
+* **histogram_median:** Histogram median
+* **histogram_variance:** Histogram variance
+* **histogram_tendency:** Histogram tendency
+
+## Model
+
+We use a *Random Forest* from the `randomForestSRC` package. First we split the dataset in train (80%) and test (20%).   
+
+```{r}
+set.seed(1990)
+train = sample(1:NROW(DT),1700)
+
+rf_model = rfsrc(fetal_health2 ~ ., data = DT[train,-c(22,24),with=F],importance = TRUE)
+rf_pred = predict(rf_model,newdata = DT[-train,-c(22:24),with=F])
+
+confusionMatrix(rf_pred$class,DT[-train]$fetal_health2)
+```
+
+
