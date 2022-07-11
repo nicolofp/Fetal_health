@@ -11,6 +11,7 @@ library(gridExtra)
 DT = fread("C:/Users/nicol/Downloads/fetal_helath/fetal_health.csv")
 DT[,fetal_health2 := factor(fetal_health,labels = c("Normal","Suspect","Pathological"))]
 DT[,fetal_health3 := factor(ifelse(fetal_health == 1,1,2),levels = c(1,2), labels = c("Normal","SP"))]
+setnames(DT,"baseline value","baseline_value")
 
 C3 = ggplot(DT, aes(x = fetal_health2, fill = fetal_health2)) +
   geom_bar() +

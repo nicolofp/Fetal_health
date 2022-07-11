@@ -51,16 +51,44 @@ The variables that we use for the model are the following:
 
 ## Model
 
-We use a *Random Forest* from the `randomForestSRC` package. First we split the dataset in train (80%) and test (20%).   
+We use a *Random Forest* from the `randomForestSRC` package. First we split the dataset in train (80%) and test (20%). We already have an internal OOB data parameter so we don't need to do any cross-validation on that model.   
 
 ```{r}
 set.seed(1990)
 train = sample(1:NROW(DT),1700)
 
-rf_model = rfsrc(fetal_health2 ~ ., data = DT[train,-c(22,24),with=F],importance = TRUE)
+rf_model = rfsrc.fast(fetal_health2 ~ ., data = DT[train,-c(22,24),with=F],importance = TRUE)
 rf_pred = predict(rf_model,newdata = DT[-train,-c(22:24),with=F])
 
 confusionMatrix(rf_pred$class,DT[-train]$fetal_health2)
 ```
 
+In order to improve the performance we can optimize the parameters:
+
+```{r}
+# rf_grid = expand.grid(ntree = c(500,750,1000,1250,1500,1750,2000),
+#                       mtry = seq(1,10),
+#                       nodesize = seq(1,30))
+# 
+# eval_rf = lapply(1:NROW(rf_grid), function(j){
+#   print(paste0("Iteration: ",j))
+#   tmp = randomForest(fetal_health2 ~ ., data = DT[train,-c(22,24),with=F], 
+#                        ntree = rf_grid$ntree[j],
+#                        mtry = rf_grid$mtry[j],
+#                        nodesize = rf_grid$nodesize[j],
+#                        replace = FALSE,
+#                        sampsize =  1275, #zceiling(0.75*NROW(x)),
+#                        importance = TRUE)
+#   z = predict(tmp,DT[-train,-c(22,23,24),with=F])
+#   cm = confusionMatrix(z,DT[-train]$fetal_health2)
+#   return(data.table(accuracy = cm$overall[1],
+#                     ntree = rf_grid$ntree[j],
+#                     mtry = rf_grid$mtry[j],
+#                     nodesize = rf_grid$nodesize[j]))
+# })
+# eval_rf = rbindlist(eval_rf)    
+# saveRDS(eval_rf,"table_tuning.rds")
+eval_rf = readRDS("table_tuning.rds")
+eval_rf[accuracy == max(accuracy)]
+```
 
