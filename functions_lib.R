@@ -7,6 +7,8 @@ library(ggplot2)
 library(psych)
 library(kableExtra)
 library(gridExtra)
+library(nloptr)
+
 
 DT = fread("C:/Users/nicol/Downloads/fetal_helath/fetal_health.csv")
 DT[,fetal_health2 := factor(fetal_health,labels = c("Normal","Suspect","Pathological"))]

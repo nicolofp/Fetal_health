@@ -6,7 +6,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 options(scipen = 5)
 source("functions_lib.R")
 ```
@@ -57,13 +57,60 @@ We use a *Random Forest* from the `randomForestSRC` package. First we split the 
 set.seed(1990)
 train = sample(1:NROW(DT),1700)
 
-rf_model = rfsrc.fast(fetal_health2 ~ ., data = DT[train,-c(22,24),with=F],importance = TRUE)
+rf_model = rfsrc(fetal_health2 ~ ., data = DT[train,-c(22,24),with=F],importance = TRUE)
 rf_pred = predict(rf_model,newdata = DT[-train,-c(22:24),with=F])
 
 confusionMatrix(rf_pred$class,DT[-train]$fetal_health2)
 ```
 
-In order to improve the performance we can optimize the parameters:
+```{r}
+# eval_f1 = function(par){
+#   tmp = rfsrc(fetal_health2 ~ ., data = DT[train,-c(22,24),with=F],
+#               ntree = ceiling(par[1]),
+#               mtry = ceiling(par[2]),
+#               nodesize = ceiling(par[3]),
+#               sampsize =  1275, #zceiling(0.75*NROW(x)),
+#               importance = TRUE)
+#   error_oob = tmp$err.rate[NROW(tmp$err.rate),1]
+#   return(error_oob)
+# }
+# 
+# 
+# res2 = nloptr(x0 = c(500,5,4), eval_f = eval_f1,
+#               lb = c(251,2,2), ub = c(3000,10,30),
+#               opts = list("algorithm" = "NLOPT_GN_DIRECT",
+#                           "xtol_rel" = 1.0e-8))
+# saveRDS(res2,"optimization_parameters_rfsrc.rds")
+res2 = readRDS("optimization_parameters_rfsrc.rds")
+```
+
+```{r}
+# eval_f0 = function(par){
+#   tmp = randomForest(fetal_health2 ~ ., data = DT[train,-c(22,24),with=F],
+#                      ntree = ceiling(par[1]),
+#                      mtry = ceiling(par[2]),
+#                      nodesize = ceiling(par[3]),
+#                      replace = FALSE,
+#                      sampsize =  1275, #zceiling(0.75*NROW(x)),
+#                      importance = TRUE)
+#   error_oob = tmp$err.rate[NROW(tmp$err.rate),1]
+#   return(error_oob)
+# }
+# 
+# 
+# res1 = nloptr(x0 = c(500,5,4), eval_f = eval_f0,
+#               lb = c(251,2,2), ub = c(3000,10,30),
+#               opts = list("algorithm" = "NLOPT_GN_DIRECT",
+#                           "xtol_rel" = 1.0e-8))
+# saveRDS(res1,"optimization_parameters_rf.rds")
+# res1 = readRDS("optimization_parameters_rf.rds")
+```
+
+In order to improve the performance we can optimize the parameters, here the parameters that minimize the OOB error:
+
++ `ntree`: `r ceiling(res2$solution)[1]` trees
++ `mtry`: `r ceiling(res2$solution)[2]` variable used each split
++ `nodesize`: `r ceiling(res2$solution)[3]` minimum size of terminal nodes  
 
 ```{r}
 # rf_grid = expand.grid(ntree = c(500,750,1000,1250,1500,1750,2000),
@@ -72,7 +119,7 @@ In order to improve the performance we can optimize the parameters:
 # 
 # eval_rf = lapply(1:NROW(rf_grid), function(j){
 #   print(paste0("Iteration: ",j))
-#   tmp = randomForest(fetal_health2 ~ ., data = DT[train,-c(22,24),with=F], 
+#   tmp = randomForest(fetal_health2 ~ ., data = DT[train,-c(22,24),with=F],
 #                        ntree = rf_grid$ntree[j],
 #                        mtry = rf_grid$mtry[j],
 #                        nodesize = rf_grid$nodesize[j],
@@ -86,10 +133,21 @@ In order to improve the performance we can optimize the parameters:
 #                     mtry = rf_grid$mtry[j],
 #                     nodesize = rf_grid$nodesize[j]))
 # })
-# eval_rf = rbindlist(eval_rf)    
+# eval_rf = rbindlist(eval_rf)
 # saveRDS(eval_rf,"table_tuning.rds")
-eval_rf = readRDS("table_tuning.rds")
-eval_rf[accuracy == max(accuracy)]
+# eval_rf = readRDS("table_tuning.rds")
+#eval_rf[accuracy == max(accuracy)]
+
+
+rf_opt = rfsrc(fetal_health2 ~ ., data = DT[train,-c(22,24),with=F],
+                      ntree = 1931,
+                      mtry = 6,
+                      nodesize = 4,
+                      sampsize =  1275, #zceiling(0.75*NROW(x)),
+                      importance = TRUE)
+z_opt = predict(rf_opt,DT[-train,-c(22,23,24),with=F])
+cm_opt = confusionMatrix(z_opt$class,DT[-train]$fetal_health2)
+cm_opt
 ```
 
 ## Implement XGBoost model 
