@@ -151,3 +151,10 @@ cm_opt
 ```
 
 ## Implement XGBoost model 
+
+Load XGBoost library and bayesian optimization for parameters
+
+```{r}
+library(xgboost)
+```
+
