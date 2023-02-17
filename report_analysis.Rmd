@@ -13,7 +13,7 @@ source("functions_lib.R")
 
 ## Data
 
-This dataset contains **2126** records of features extracted from *Cardiotocogram exams*, which were then classified by three expert obstetritians into 3 classes:
+This dataset contains **2126** records of features extracted from *Cardiotocogram exams*, which were then classified by three expert obstetricians into 3 classes:
 
 + **Normal**: `fetal_health = 1`
 + **Suspect**: `fetal_health = 2`
@@ -92,3 +92,4 @@ eval_rf = readRDS("table_tuning.rds")
 eval_rf[accuracy == max(accuracy)]
 ```
 
+## Implement XGBoost model 
